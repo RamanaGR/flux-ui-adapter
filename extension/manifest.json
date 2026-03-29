@@ -1,0 +1,28 @@
+{
+  "manifest_version": 3,
+  "name": "ChromaBridge Theme Sync",
+  "version": "1.0.0",
+  "description": "Syncs UI themes and design tokens across your browser.",
+  "permissions": ["storage", "activeTab", "tabs"],
+  "host_permissions": ["<all_urls>"],
+  "background": {
+    "service_worker": "dist/background.js",
+    "type": "module"
+  },
+  "commands": {
+    "start-capture": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+6",
+        "mac": "Command+Shift+6"
+      },
+      "description": "Start screenshot capture"
+    },
+    "stop-capture": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+7",
+        "mac": "Command+Shift+7"
+      },
+      "description": "Stop screenshot capture"
+    }
+  }
+}

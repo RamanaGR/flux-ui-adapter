@@ -1,0 +1,14 @@
+import pino from "pino";
+import { config } from "../config.js";
+
+export const logger = pino({
+  level: config.logLevel,
+  transport:
+    config.env === "development"
+      ? { target: "pino-pretty", options: { colorize: true } }
+      : undefined,
+});
+
+export function childLogger(bindings: Record<string, unknown>) {
+  return logger.child(bindings);
+}
