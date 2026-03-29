@@ -26,7 +26,6 @@ export const config = {
   get heartbeatIntervalMs() { return envInt("HEARTBEAT_INTERVAL_MS", 15000); },
   get heartbeatTimeoutMs() { return envInt("HEARTBEAT_TIMEOUT_MS", 30000); },
   get logLevel() { return env("LOG_LEVEL", "info"); },
-  get mutationsEnabled() { return envBool("MUTATIONS_ENABLED", true); },
   get screenshotsEnabled() { return envBool("SCREENSHOTS_ENABLED", false); },
   get screenshotIntervalMs() { return envInt("SCREENSHOT_INTERVAL_MS", 10000); },
 };

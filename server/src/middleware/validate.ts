@@ -2,7 +2,6 @@ import { ZodSchema, ZodError } from "zod";
 import { logger } from "../lib/logger.js";
 import {
   MessageEnvelopeSchema,
-  DomMutationMessageSchema,
   HeartbeatMessageSchema,
   MessageType,
   type MessageEnvelope,
@@ -29,13 +28,6 @@ export function validateEnvelope(raw: unknown): MessageEnvelope {
 
 export function validatePayload(envelope: MessageEnvelope): MessageEnvelope {
   switch (envelope.type) {
-    case MessageType.DOM_MUTATION: {
-      const result = DomMutationMessageSchema.safeParse(envelope);
-      if (!result.success) {
-        throw new ValidationError("Invalid DOM mutation payload", result.error.issues);
-      }
-      return result.data;
-    }
     case MessageType.HEARTBEAT: {
       const result = HeartbeatMessageSchema.safeParse(envelope);
       if (!result.success) {

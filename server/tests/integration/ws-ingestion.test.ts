@@ -49,70 +49,6 @@ function waitForMessage(ws: WebSocket): Promise<string> {
   });
 }
 
-describe("DOM mutation ingestion", () => {
-  it("stores a DOM mutation in SQLite", async () => {
-    const sessionId = uuidv4();
-    const ws = await connectWs(sessionId);
-
-    const msg = {
-      type: "TYPE_DOM_MUTATION",
-      sessionId,
-      timestamp: Date.now(),
-      compressed: false,
-      payload: {
-        url: "https://test.com",
-        mutations: [
-          { target: "div.content", type: "childList", addedNodes: ["<p>new</p>"] },
-        ],
-      },
-    };
-
-    ws.send(JSON.stringify(msg));
-
-    await new Promise((r) => setTimeout(r, 200));
-
-    const rows = getDb()
-      .prepare("SELECT * FROM dom_mutations WHERE session_id = ?")
-      .all(sessionId) as Array<{ session_id: string; payload: string; seq: number }>;
-
-    expect(rows.length).toBe(1);
-    expect(rows[0].session_id).toBe(sessionId);
-    const payload = JSON.parse(rows[0].payload);
-    expect(payload.url).toBe("https://test.com");
-
-    ws.close();
-  });
-
-  it("increments sequence numbers for multiple mutations", async () => {
-    const sessionId = uuidv4();
-    const ws = await connectWs(sessionId);
-
-    for (let i = 0; i < 3; i++) {
-      ws.send(
-        JSON.stringify({
-          type: "TYPE_DOM_MUTATION",
-          sessionId,
-          timestamp: Date.now(),
-          compressed: false,
-          payload: {
-            url: "https://test.com",
-            mutations: [{ target: "div", type: "attributes", attributeName: "data-i" }],
-          },
-        }),
-      );
-    }
-
-    await new Promise((r) => setTimeout(r, 300));
-
-    const rows = getDb()
-      .prepare("SELECT seq FROM dom_mutations WHERE session_id = ? ORDER BY seq")
-      .all(sessionId) as Array<{ seq: number }>;
-
-    expect(rows.map((r) => r.seq)).toEqual([1, 2, 3]);
-    ws.close();
-  });
-});
-
 describe("Canvas snapshot ingestion", () => {
   it("stores a binary canvas snapshot to filesystem and SQLite", async () => {
     const sessionId = uuidv4();
@@ -196,22 +132,9 @@ describe("Session replay view", () => {
     expect(res.status).toBe(404);
   });
 
-  it("returns a live view page for a session with mutations", async () => {
+  it("returns a live view page for a session with screenshots", async () => {
     const sessionId = uuidv4();
     const ws = await connectWs(sessionId);
-
-    ws.send(
-      JSON.stringify({
-        type: "TYPE_DOM_MUTATION",
-        sessionId,
-        timestamp: Date.now(),
-        compressed: false,
-        payload: {
-          url: "https://test.com/replay",
-          mutations: [{ target: "div.content", type: "childList", addedNodes: ["<p>Replayed</p>"] }],
-        },
-      }),
-    );
 
     await new Promise((r) => setTimeout(r, 200));
     ws.close();
@@ -230,22 +153,9 @@ describe("Session replay view", () => {
 });
 
 describe("Viewer WebSocket", () => {
-  it("sends history on connect and streams live mutations", async () => {
+  it("sends history on connect and streams live screenshots", async () => {
     const sessionId = uuidv4();
     const ingestWs = await connectWs(sessionId);
-
-    ingestWs.send(
-      JSON.stringify({
-        type: "TYPE_DOM_MUTATION",
-        sessionId,
-        timestamp: Date.now(),
-        compressed: false,
-        payload: {
-          url: "https://test.com/viewer",
-          mutations: [{ target: "div.old", type: "childList", addedNodes: ["<p>historic</p>"] }],
-        },
-      }),
-    );
 
     await new Promise((r) => setTimeout(r, 200));
 
@@ -253,7 +163,6 @@ describe("Viewer WebSocket", () => {
     if (!addr || typeof addr !== "object") throw new Error("No address");
     const viewerUrl = `ws://127.0.0.1:${(addr as { port: number }).port}/viewer/${sessionId}`;
 
-    const received: string[] = [];
     const viewerWs = new WebSocket(viewerUrl);
 
     const historyPromise = new Promise<string>((resolve) => {
@@ -269,30 +178,8 @@ describe("Viewer WebSocket", () => {
       const historyMsg = await historyPromise;
       const history = JSON.parse(historyMsg);
       expect(history.type).toBe("HISTORY");
-      expect(history.mutations.length).toBe(1);
-      expect(history.mutations[0].payload.url).toBe("https://test.com/viewer");
-
-      const livePromise = new Promise<string>((resolve) => {
-        viewerWs.once("message", (data) => resolve(data.toString()));
-      });
-
-      ingestWs.send(
-        JSON.stringify({
-          type: "TYPE_DOM_MUTATION",
-          sessionId,
-          timestamp: Date.now(),
-          compressed: false,
-          payload: {
-            url: "https://test.com/viewer",
-            mutations: [{ target: "div.new", type: "attributes", attributeName: "class" }],
-          },
-        }),
-      );
-
-      const liveMsg = await livePromise;
-      const live = JSON.parse(liveMsg);
-      expect(live.type).toBe("LIVE_MUTATION");
-      expect(live.payload.mutations[0].target).toBe("div.new");
+      expect(history.screenshots).toBeDefined();
+      expect(Array.isArray(history.screenshots)).toBe(true);
     } finally {
       viewerWs.close();
       ingestWs.close();

@@ -10,8 +10,7 @@
     "start": "node dist/server.js",
     "test": "vitest run",
     "test:watch": "vitest",
-    "lint": "tsc --noEmit",
-    "test:client": "tsx scripts/test-client.ts"
+    "lint": "tsc --noEmit"
   },
   "engines": {
     "node": ">=20.0.0"

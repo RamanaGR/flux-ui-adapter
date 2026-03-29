@@ -11,11 +11,9 @@ export interface WsManagerOptions {
 
 const INITIAL_DELAY = 1000;
 const MAX_DELAY = 30000;
-const MAX_QUEUE = 10;
 
 export class WebSocketManager {
   private ws: WebSocket | null = null;
-  private queue: MessageEnvelope[] = [];
   private reconnectDelay = INITIAL_DELAY;
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private intentionallyClosed = false;
@@ -70,22 +68,6 @@ export class WebSocketManager {
     this.onStatusChange?.(false);
   }
 
-  send(payload: unknown): void {
-    const envelope: MessageEnvelope = {
-      type: MessageType.DOM_MUTATION,
-      sessionId: this.sessionId,
-      timestamp: Date.now(),
-      compressed: true,
-      payload,
-    };
-
-    if (this.isConnected()) {
-      this.sendCompressed(envelope);
-    } else {
-      this.enqueue(envelope);
-    }
-  }
-
   sendScreenshot(payload: unknown): void {
     const envelope: MessageEnvelope = {
       type: MessageType.CANVAS_SNAPSHOT,
@@ -118,15 +100,10 @@ export class WebSocketManager {
     return this.ws !== null && this.ws.readyState === WebSocket.OPEN;
   }
 
-  getQueueSize(): number {
-    return this.queue.length;
-  }
-
   private handleOpen(): void {
     console.log("[ChromaBridge] WebSocket connected");
     this.reconnectDelay = INITIAL_DELAY;
     this.onStatusChange?.(true);
-    this.flushQueue();
   }
 
   private handleMessage(event: MessageEvent): void {
@@ -174,31 +151,5 @@ export class WebSocketManager {
     const json = JSON.stringify(envelope);
     const compressed = gzipSync(new TextEncoder().encode(json));
     this.ws!.send(compressed.buffer);
-  }
-
-  private enqueue(envelope: MessageEnvelope): void {
-    if (this.queue.length >= MAX_QUEUE) {
-      this.queue.shift();
-    }
-    this.queue.push(envelope);
-    console.log(`[ChromaBridge] Queued message (${this.queue.length}/${MAX_QUEUE})`);
-  }
-
-  private flushQueue(): void {
-    const pending = [...this.queue];
-    this.queue = [];
-
-    for (const envelope of pending) {
-      if (this.isConnected()) {
-        this.sendCompressed(envelope);
-      } else {
-        this.queue.push(envelope);
-        break;
-      }
-    }
-
-    if (pending.length > 0) {
-      console.log(`[ChromaBridge] Flushed ${pending.length - this.queue.length} queued messages`);
-    }
   }
 }

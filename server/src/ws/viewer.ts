@@ -3,7 +3,6 @@ import { Duplex } from "node:stream";
 import { WebSocketServer, WebSocket } from "ws";
 import { getDb, isDbOpen } from "../storage/sqlite.js";
 import {
-  subscribe, unsubscribe, type MutationEvent,
   subscribeScreenshots, unsubscribeScreenshots, type ScreenshotEvent,
 } from "../lib/event-bus.js";
 import { logger } from "../lib/logger.js";
@@ -40,17 +39,6 @@ export function handleViewerUpgrade(
 function handleViewerConnection(ws: WebSocket, sessionId: string): void {
   sendHistory(ws, sessionId);
 
-  const mutationListener = (event: MutationEvent) => {
-    if (ws.readyState !== WebSocket.OPEN) return;
-    ws.send(JSON.stringify({
-      type: "LIVE_MUTATION",
-      sessionId: event.sessionId,
-      seq: event.seq,
-      payload: event.payload,
-      createdAt: event.createdAt,
-    }));
-  };
-
   const screenshotListener = (event: ScreenshotEvent) => {
     if (ws.readyState !== WebSocket.OPEN) return;
     ws.send(JSON.stringify({
@@ -65,24 +53,21 @@ function handleViewerConnection(ws: WebSocket, sessionId: string): void {
     }));
   };
 
-  subscribe(sessionId, mutationListener);
   subscribeScreenshots(sessionId, screenshotListener);
 
   ws.on("close", () => {
-    unsubscribe(sessionId, mutationListener);
     unsubscribeScreenshots(sessionId, screenshotListener);
     logger.info({ sessionId }, "Viewer disconnected");
   });
 
   ws.on("error", () => {
-    unsubscribe(sessionId, mutationListener);
     unsubscribeScreenshots(sessionId, screenshotListener);
   });
 }
 
 function sendHistory(ws: WebSocket, sessionId: string): void {
   if (!isDbOpen()) {
-    ws.send(JSON.stringify({ type: "HISTORY", mutations: [], screenshots: [], session: null }));
+    ws.send(JSON.stringify({ type: "HISTORY", screenshots: [], session: null }));
     return;
   }
 
@@ -93,16 +78,6 @@ function sendHistory(ws: WebSocket, sessionId: string): void {
     .get(sessionId) as
     | { id: string; status: string; created_at: number; completed_at: number | null }
     | undefined;
-
-  const mutRows = db
-    .prepare("SELECT seq, payload, created_at FROM dom_mutations WHERE session_id = ? ORDER BY seq ASC")
-    .all(sessionId) as Array<{ seq: number; payload: string; created_at: number }>;
-
-  const mutations = mutRows.map((r) => ({
-    seq: r.seq,
-    payload: JSON.parse(r.payload),
-    createdAt: r.created_at,
-  }));
 
   const ssRows = db
     .prepare("SELECT seq, file_path, size_bytes, created_at FROM canvas_snapshots WHERE session_id = ? ORDER BY seq ASC")
@@ -117,7 +92,6 @@ function sendHistory(ws: WebSocket, sessionId: string): void {
   ws.send(JSON.stringify({
     type: "HISTORY",
     session: session ?? null,
-    mutations,
     screenshots,
   }));
 }

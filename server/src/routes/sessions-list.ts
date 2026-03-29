@@ -6,7 +6,6 @@ interface SessionRow {
   status: string;
   created_at: number;
   completed_at: number | null;
-  mutation_count: number;
   screenshot_count: number;
 }
 
@@ -20,10 +19,8 @@ export async function sessionsListRoutes(app: FastifyInstance): Promise<void> {
     const sessions = db
       .prepare(
         `SELECT s.id, s.status, s.created_at, s.completed_at,
-                COUNT(DISTINCT dm.id) AS mutation_count,
                 COUNT(DISTINCT cs.id) AS screenshot_count
          FROM sessions s
-         LEFT JOIN dom_mutations dm ON dm.session_id = s.id
          LEFT JOIN canvas_snapshots cs ON cs.session_id = s.id
          GROUP BY s.id
          ORDER BY s.created_at DESC`,
@@ -58,7 +55,6 @@ function renderSessionsPage(sessions: SessionRow[]): string {
         <td><span class="status-badge ${isActive ? "badge-active" : "badge-complete"}">${s.status}</span></td>
         <td>${created}</td>
         <td>${completed}</td>
-        <td class="num">${s.mutation_count}</td>
         <td class="num">${s.screenshot_count}</td>
         <td><a href="/session/${s.id}/view" class="open-btn">Open View</a></td>
       </tr>`;
@@ -126,7 +122,6 @@ function renderSessionsPage(sessions: SessionRow[]): string {
           <th>Status</th>
           <th>Created</th>
           <th>Completed</th>
-          <th class="num">Mutations</th>
           <th class="num">Screenshots</th>
           <th></th>
         </tr>

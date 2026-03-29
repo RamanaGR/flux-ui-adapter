@@ -1,26 +1,10 @@
 import { z } from "zod";
 
 export const MessageType = {
-  DOM_MUTATION: "TYPE_DOM_MUTATION",
   CANVAS_SNAPSHOT: "TYPE_CANVAS_SNAPSHOT",
   HEARTBEAT: "TYPE_HEARTBEAT",
   UI_CONFIG: "TYPE_UI_CONFIG",
 } as const;
-
-export const DomMutationPayloadSchema = z.object({
-  url: z.string(),
-  mutations: z.array(
-    z.object({
-      target: z.string(),
-      type: z.enum(["childList", "attributes", "characterData"]),
-      addedNodes: z.array(z.string()).optional(),
-      removedNodes: z.array(z.string()).optional(),
-      attributeName: z.string().optional(),
-      oldValue: z.string().nullable().optional(),
-      newValue: z.string().nullable().optional(),
-    }),
-  ),
-});
 
 export const HeartbeatPayloadSchema = z.object({
   tabActive: z.boolean().optional(),
@@ -29,7 +13,6 @@ export const HeartbeatPayloadSchema = z.object({
 
 export const MessageEnvelopeSchema = z.object({
   type: z.enum([
-    MessageType.DOM_MUTATION,
     MessageType.CANVAS_SNAPSHOT,
     MessageType.HEARTBEAT,
   ]),
@@ -37,11 +20,6 @@ export const MessageEnvelopeSchema = z.object({
   timestamp: z.number(),
   compressed: z.boolean().default(false),
   payload: z.unknown(),
-});
-
-export const DomMutationMessageSchema = MessageEnvelopeSchema.extend({
-  type: z.literal(MessageType.DOM_MUTATION),
-  payload: DomMutationPayloadSchema,
 });
 
 export const HeartbeatMessageSchema = MessageEnvelopeSchema.extend({
@@ -69,7 +47,6 @@ export const ScreenshotMessageSchema = MessageEnvelopeSchema.extend({
 });
 
 export type MessageEnvelope = z.infer<typeof MessageEnvelopeSchema>;
-export type DomMutationMessage = z.infer<typeof DomMutationMessageSchema>;
 export type HeartbeatMessage = z.infer<typeof HeartbeatMessageSchema>;
 export type UiConfig = z.infer<typeof UiConfigSchema>;
 export type ScreenshotPayload = z.infer<typeof ScreenshotPayloadSchema>;

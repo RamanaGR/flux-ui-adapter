@@ -1,6 +1,6 @@
 import { WebSocketManager } from "./ws-manager.js";
 import { ScreenshotManager } from "./screenshot-manager.js";
-import { MessageType, type ContentMessage, type UiConfigMessage, type CaptureConfig } from "./types.js";
+import { MessageType, type UiConfigMessage, type CaptureConfig } from "./types.js";
 
 const SERVER_URL = "ws://localhost:3000";
 const HEARTBEAT_INTERVAL_MS = 20_000;
@@ -10,7 +10,6 @@ let screenshotMgr: ScreenshotManager | null = null;
 let heartbeatTimer: ReturnType<typeof setInterval> | null = null;
 
 const captureConfig: CaptureConfig = {
-  mutationsEnabled: true,
   screenshotsEnabled: false,
   screenshotIntervalMs: 10000,
 };
@@ -58,9 +57,6 @@ function handleServerMessage(data: unknown): void {
     console.log("[ChromaBridge BG] Received UI config update:", configMsg);
 
     if (configMsg.settings) {
-      if (typeof configMsg.settings.mutationsEnabled === "boolean") {
-        captureConfig.mutationsEnabled = configMsg.settings.mutationsEnabled;
-      }
       if (typeof configMsg.settings.screenshotsEnabled === "boolean") {
         captureConfig.screenshotsEnabled = configMsg.settings.screenshotsEnabled;
         if (!captureConfig.screenshotsEnabled && screenshotMgr?.isCapturing()) {
@@ -87,13 +83,6 @@ function handleServerMessage(data: unknown): void {
     }
   }
 }
-
-chrome.runtime.onMessage.addListener((message: ContentMessage, _sender, _sendResponse) => {
-  if (message.action === "DOM_MUTATIONS" && manager && captureConfig.mutationsEnabled) {
-    manager.send(message.payload);
-  }
-  return false;
-});
 
 chrome.commands.onCommand.addListener((command) => {
   if (!captureConfig.screenshotsEnabled) {

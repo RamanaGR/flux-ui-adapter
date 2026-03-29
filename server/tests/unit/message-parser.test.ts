@@ -3,7 +3,6 @@ import { deflateRawSync, gzipSync } from "node:zlib";
 import { v4 as uuidv4 } from "uuid";
 import {
   MessageEnvelopeSchema,
-  DomMutationMessageSchema,
   HeartbeatMessageSchema,
   parseBinaryHeader,
   BINARY_TYPE_CANVAS,
@@ -14,23 +13,6 @@ import { parseAndValidate, ValidationError } from "../../src/middleware/validate
 
 describe("MessageEnvelopeSchema", () => {
   const sessionId = uuidv4();
-
-  it("accepts a valid DOM mutation envelope", () => {
-    const msg = {
-      type: "TYPE_DOM_MUTATION",
-      sessionId,
-      timestamp: Date.now(),
-      compressed: false,
-      payload: {
-        url: "https://example.com",
-        mutations: [
-          { target: "body > div", type: "childList", addedNodes: ["<span>hi</span>"] },
-        ],
-      },
-    };
-    const result = DomMutationMessageSchema.safeParse(msg);
-    expect(result.success).toBe(true);
-  });
 
   it("rejects envelope with missing type", () => {
     const msg = { sessionId, timestamp: Date.now(), payload: {} };
@@ -140,7 +122,7 @@ describe("decompressSync", () => {
   });
 
   it("auto-detects gzip vs raw deflate", () => {
-    const text = '{"mutations":[{"target":"div","type":"childList"}]}';
+    const text = '{"url":"https://example.com","screenshots":[]}';
     const gzipped = gzipSync(Buffer.from(text));
     const rawDeflated = deflateRawSync(Buffer.from(text));
 
@@ -157,19 +139,16 @@ describe("decompressSync", () => {
 describe("parseAndValidate", () => {
   const sessionId = uuidv4();
 
-  it("parses and validates a DOM mutation JSON string", () => {
+  it("parses and validates a heartbeat JSON string", () => {
     const msg = {
-      type: "TYPE_DOM_MUTATION",
+      type: "TYPE_HEARTBEAT",
       sessionId,
       timestamp: Date.now(),
       compressed: false,
-      payload: {
-        url: "https://example.com",
-        mutations: [{ target: "div#main", type: "attributes", attributeName: "class" }],
-      },
+      payload: { tabActive: true },
     };
     const result = parseAndValidate(JSON.stringify(msg));
-    expect(result.type).toBe("TYPE_DOM_MUTATION");
+    expect(result.type).toBe("TYPE_HEARTBEAT");
     expect(result.sessionId).toBe(sessionId);
   });
 
@@ -183,16 +162,13 @@ describe("parseAndValidate", () => {
     );
   });
 
-  it("throws ValidationError on bad mutation type enum", () => {
+  it("throws ValidationError on unknown message type", () => {
     const msg = {
-      type: "TYPE_DOM_MUTATION",
+      type: "TYPE_UNKNOWN",
       sessionId,
       timestamp: Date.now(),
       compressed: false,
-      payload: {
-        url: "https://example.com",
-        mutations: [{ target: "div", type: "invalidType" }],
-      },
+      payload: {},
     };
     expect(() => parseAndValidate(JSON.stringify(msg))).toThrow(ValidationError);
   });

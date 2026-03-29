@@ -49,18 +49,6 @@ export function initDb(dbPath: string = config.dbPath): Database.Database {
       archived    INTEGER NOT NULL DEFAULT 0
     );
 
-    CREATE TABLE IF NOT EXISTS dom_mutations (
-      id          INTEGER PRIMARY KEY AUTOINCREMENT,
-      session_id  TEXT NOT NULL,
-      seq         INTEGER NOT NULL,
-      payload     TEXT NOT NULL,
-      created_at  INTEGER NOT NULL,
-      FOREIGN KEY (session_id) REFERENCES sessions(id)
-    );
-
-    CREATE INDEX IF NOT EXISTS idx_dom_mutations_session
-      ON dom_mutations(session_id, seq);
-
     CREATE TABLE IF NOT EXISTS canvas_snapshots (
       id          INTEGER PRIMARY KEY AUTOINCREMENT,
       session_id  TEXT NOT NULL,
@@ -90,18 +78,6 @@ export function completeSession(sessionId: string): void {
   getDb()
     .prepare("UPDATE sessions SET status = 'COMPLETE', completed_at = ? WHERE id = ?")
     .run(Date.now(), sessionId);
-}
-
-export function insertDomMutation(
-  sessionId: string,
-  seq: number,
-  payload: string,
-): void {
-  getDb()
-    .prepare(
-      "INSERT INTO dom_mutations (session_id, seq, payload, created_at) VALUES (?, ?, ?, ?)",
-    )
-    .run(sessionId, seq, payload, Date.now());
 }
 
 export function insertCanvasSnapshotRef(

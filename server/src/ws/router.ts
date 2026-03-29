@@ -8,7 +8,6 @@ import {
   BINARY_HEADER_SIZE,
   type MessageEnvelope,
 } from "../schemas/messages.js";
-import { handleDomMutation } from "../handlers/dom-mutation.handler.js";
 import { handleCanvasSnapshot, handleScreenshotJson } from "../handlers/canvas-snapshot.handler.js";
 import { markAlive } from "./heartbeat.js";
 
@@ -107,11 +106,6 @@ function routeJsonMessage(
   const validated: MessageEnvelope = parseAndValidate(jsonStr);
 
   switch (validated.type) {
-    case MessageType.DOM_MUTATION: {
-      const seq = getNextSeq(sessionId);
-      handleDomMutation(validated.sessionId, seq, validated.payload);
-      break;
-    }
     case MessageType.HEARTBEAT: {
       markAlive(sessionId);
       log.debug({ sessionId }, "Heartbeat processed");

@@ -9,13 +9,6 @@
     "service_worker": "dist/background.js",
     "type": "module"
   },
-  "content_scripts": [
-    {
-      "matches": ["<all_urls>"],
-      "js": ["dist/content.js"],
-      "run_at": "document_idle"
-    }
-  ],
   "commands": {
     "start-capture": {
       "suggested_key": {

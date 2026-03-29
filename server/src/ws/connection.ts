@@ -61,7 +61,6 @@ function sendCaptureConfig(ws: WebSocket, sessionId: string): void {
   const message = {
     type: MessageType.UI_CONFIG,
     settings: {
-      mutationsEnabled: config.mutationsEnabled,
       screenshotsEnabled: config.screenshotsEnabled,
       screenshotIntervalMs: config.screenshotIntervalMs,
     },
