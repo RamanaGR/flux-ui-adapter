@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ChromaBridge — API Documentation</title>
+  <style>
+    :root { --bg: #0f0d1a; --surface: #1a1726; --text: #e2e0f0; --muted: #9896b0; --accent: #a78bfa; --accent2: #7c3aed; --border: #2d2a3e; --code-bg: #13111d; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); line-height: 1.7; }
+    .container { max-width: 980px; margin: 0 auto; padding: 2.5rem 2rem; }
+    nav { display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); padding-bottom: 1.5rem; margin-bottom: 2.5rem; }
+    nav h1 { font-size: 1.5rem; background: linear-gradient(135deg, var(--accent), #c084fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .badge { background: var(--accent2); color: #fff; padding: 0.15rem 0.65rem; border-radius: 9999px; font-size: 0.7rem; font-weight: 600; margin-left: 0.75rem; vertical-align: middle; -webkit-text-fill-color: #fff; }
+    nav ul { list-style: none; display: flex; gap: 1.5rem; }
+    nav a { color: var(--muted); text-decoration: none; font-size: 0.85rem; transition: color 0.2s; }
+    nav a:hover { color: var(--accent); }
+    .hero { text-align: center; padding: 2rem 0 3rem; }
+    .hero h2 { font-size: 2rem; margin-bottom: 0.75rem; }
+    .hero p { color: var(--muted); max-width: 600px; margin: 0 auto; font-size: 1.05rem; }
+    section { background: var(--surface); border: 1px solid var(--border); border-radius: 0.75rem; padding: 1.75rem; margin-bottom: 1.5rem; }
+    section h3 { font-size: 1.1rem; color: var(--accent); margin-bottom: 0.75rem; }
+    section p, section li { color: var(--muted); font-size: 0.92rem; }
+    ul { padding-left: 1.25rem; }
+    li { margin-bottom: 0.4rem; }
+    pre { background: var(--code-bg); border: 1px solid var(--border); border-radius: 0.5rem; padding: 1rem 1.25rem; overflow-x: auto; font-size: 0.85rem; color: #c4b5fd; margin-top: 0.75rem; line-height: 1.5; }
+    code { font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace; }
+    .inline-code { background: var(--code-bg); padding: 0.1rem 0.4rem; border-radius: 0.25rem; font-size: 0.88em; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+    @media (max-width: 700px) { .grid { grid-template-columns: 1fr; } }
+    .method { display: inline-block; font-weight: 700; font-size: 0.7rem; padding: 0.15rem 0.45rem; border-radius: 0.2rem; margin-right: 0.5rem; }
+    .get { background: #065f46; color: #6ee7b7; }
+    .post { background: #7c2d12; color: #fdba74; }
+    .ws { background: #1e3a5f; color: #7dd3fc; }
+    footer { text-align: center; color: var(--border); margin-top: 3rem; font-size: 0.78rem; padding-top: 2rem; border-top: 1px solid var(--border); }
+    footer a { color: var(--muted); text-decoration: none; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <nav>
+      <h1>ChromaBridge <span class="badge">v2.1.0</span></h1>
+      <ul>
+        <li><a href="#overview">Overview</a></li>
+        <li><a href="#quickstart">Quick Start</a></li>
+        <li><a href="#api">API</a></li>
+        <li><a href="#websocket">WebSocket</a></li>
+        <li><a href="#auth">Auth</a></li>
+      </ul>
+    </nav>
+
+    <div class="hero">
+      <h2>Design Token Synchronization,<br>Solved.</h2>
+      <p>ChromaBridge is an enterprise-grade platform for real-time UI theming, design token distribution, and cross-application style orchestration.</p>
+    </div>
+
+    <section id="overview">
+      <h3>Overview</h3>
+      <p>ChromaBridge provides a centralized hub for managing design tokens — colors, typography, spacing, and component-level style overrides — across web applications, browser extensions, and native clients. Changes propagate in real-time via WebSocket, with REST endpoints for CRUD operations and batch syncing.</p>
+    </section>
+
+    <div class="grid">
+      <section id="quickstart">
+        <h3>Quick Start</h3>
+        <ul>
+          <li>Install the SDK: <code class="inline-code">npm i @chromabridge/sdk</code></li>
+          <li>Generate an API key in the <a href="#" style="color:var(--accent);">Dashboard</a></li>
+          <li>Initialize the client with your org's endpoint</li>
+          <li>Subscribe to token change events</li>
+        </ul>
+        <pre><code>import { ChromaBridge } from '@chromabridge/sdk';
+
+const cb = new ChromaBridge({
+  endpoint: 'wss://api.chromabridge.io',
+  apiKey: process.env.CB_API_KEY,
+});
+
+cb.on('tokens:updated', (tokens) => {
+  applyTheme(tokens);
+});</code></pre>
+      </section>
+
+      <section id="auth">
+        <h3>Authentication</h3>
+        <p>All requests require an <code class="inline-code">X-API-Key</code> header. Keys are scoped per-organization and can be rotated in the dashboard.</p>
+        <pre><code>curl -H "X-API-Key: cb_live_xxxx" \
+  https://api.chromabridge.io/v1/tokens</code></pre>
+        <p style="margin-top:0.75rem;">WebSocket connections pass the key during the upgrade handshake. Unauthorized requests receive <code class="inline-code">401 Unauthorized</code>.</p>
+      </section>
+    </div>
+
+    <section id="api">
+      <h3>REST API Reference</h3>
+      <p style="margin-bottom:0.75rem;">Base URL: <code class="inline-code">https://api.chromabridge.io/v1</code></p>
+      <div>
+        <p><span class="method get">GET</span> <code class="inline-code">/tokens</code> — List all design tokens for the authenticated organization.</p>
+        <p><span class="method post">POST</span> <code class="inline-code">/tokens</code> — Create or update a batch of design tokens.</p>
+        <p><span class="method get">GET</span> <code class="inline-code">/tokens/:id</code> — Retrieve a single token by ID.</p>
+        <p><span class="method get">GET</span> <code class="inline-code">/themes</code> — List all theme configurations.</p>
+        <p><span class="method post">POST</span> <code class="inline-code">/themes/:id/apply</code> — Push a theme to all connected clients.</p>
+      </div>
+    </section>
+
+    <section id="websocket">
+      <h3>WebSocket Events</h3>
+      <p style="margin-bottom:0.75rem;">Connect to <code class="inline-code">wss://api.chromabridge.io/ws</code> with your API key header.</p>
+      <div>
+        <p><span class="method ws">WS</span> <code class="inline-code">tokens:updated</code> — Emitted when design tokens change. Payload contains the full token set.</p>
+        <p><span class="method ws">WS</span> <code class="inline-code">theme:applied</code> — Emitted when a theme is pushed. Includes theme ID and resolved token values.</p>
+        <p><span class="method ws">WS</span> <code class="inline-code">config:sync</code> — Bi-directional config synchronization heartbeat.</p>
+      </div>
+      <pre><code>// Client → Server (heartbeat)
+{ "type": "TYPE_HEARTBEAT", "sessionId": "...", "timestamp": 1711234567890 }
+
+// Server → Client (token update)
+{ "type": "TYPE_UI_CONFIG", "theme": { "primary": "#7c3aed" } }</code></pre>
+    </section>
+
+    <section>
+      <h3>Rate Limits</h3>
+      <p>REST endpoints: <strong>1,000 requests/minute</strong> per API key. WebSocket connections: <strong>100 messages/second</strong> per session. Exceeding limits returns <code class="inline-code">429 Too Many Requests</code>.</p>
+    </section>
+
+    <section>
+      <h3>Support</h3>
+      <p>For integration help, reach out to <code class="inline-code">support@chromabridge.io</code> or browse the <a href="#" style="color:var(--accent);">Community Forum</a>. Enterprise customers have access to dedicated Slack channels and priority support SLAs.</p>
+    </section>
+
+    <footer>
+      &copy; 2026 ChromaBridge, Inc. &mdash; All rights reserved. &nbsp;|&nbsp; <a href="#">Privacy</a> &nbsp;|&nbsp; <a href="#">Terms</a> &nbsp;|&nbsp; <a href="#">Status</a>
+    </footer>
+  </div>
+</body>
+</html>

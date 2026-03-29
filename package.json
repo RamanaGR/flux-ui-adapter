@@ -1,0 +1,5 @@
+{
+  "name": "flux-ui-adapter",
+  "private": true,
+  "workspaces": ["server", "extension"]
+}
